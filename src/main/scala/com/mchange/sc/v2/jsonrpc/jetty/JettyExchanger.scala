@@ -16,7 +16,7 @@ import java.io.ByteArrayInputStream
 import java.net.URL
 import java.nio.ByteBuffer
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{Future, Promise}
 import scala.util.Try
 
 import play.api.libs.json._
@@ -24,11 +24,7 @@ import play.api.libs.json._
 object JettyExchanger {
   private implicit lazy val logger = mlogger( this )
 
-  final class Factory( implicit ec : ExecutionContext = null ) extends Exchanger.Factory {
-    if ( ec != null ) {
-      WARNING.log( s"JettyExchanger uses a jetty-internal Thread pool, execution context '${ec}' will be ignored." )
-    }
-
+  final class Factory extends Exchanger.Factory {
     val httpClient = new HttpClient()
     httpClient.setFollowRedirects(false)
     httpClient.start()
