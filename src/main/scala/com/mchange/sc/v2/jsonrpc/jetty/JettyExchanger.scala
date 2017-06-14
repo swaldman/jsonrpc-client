@@ -8,9 +8,11 @@ import com.mchange.sc.v2.yinyang._
 
 import com.mchange.sc.v1.log.MLevel._
 
+import com.mchange.v3.nio.ByteBufferUtils
+
 import org.eclipse.jetty.client.HttpClient
 import org.eclipse.jetty.client.api.{Request => JRequest, Response => JResponse, Result => JResult}
-import org.eclipse.jetty.client.util.ByteBufferContentProvider
+import org.eclipse.jetty.client.util.{ByteBufferContentProvider, InputStreamResponseListener}
 
 import java.io.ByteArrayInputStream
 import java.net.URL
@@ -24,6 +26,9 @@ import play.api.libs.json._
 object JettyExchanger {
   private implicit lazy val logger = mlogger( this )
 
+  object Factory {
+    def create() : Factory = new Factory()
+  }
   final class Factory extends Exchanger.Factory {
     val httpClient = new HttpClient()
     httpClient.setFollowRedirects(false)
@@ -50,19 +55,21 @@ class JettyExchanger( url : URL, factory : JettyExchanger.Factory ) extends Exch
 
     val promise = Promise[Response]()
 
-    val handler = new JResponse.ContentListener with JResponse.FailureListener with JResponse.CompleteListener {
-      def onContent( response : JResponse, content : ByteBuffer ) : Unit = {
-        val attempt = Try {
-          borrow( new ByteArrayInputStream( content.array ) ) { is =>
-            traceParse( is ).as[Response] ensuring goodId( id )
-          }
+    val handler = new JResponse.Listener.Adapter {
+
+      override def onContent( response : JResponse, content : ByteBuffer ) : Unit = {
+        val status = response.getStatus()
+        if (status == 200) {
+          val attempt = Try( traceParse( ByteBufferUtils.newArray( content ) ).as[Response] ensuring goodId( id ) )
+          promise.complete( attempt )
+        } else {
+          promise.failure( new Exception( s"Unexpected HTTP status: ${status}" ) )
         }
-        promise.complete( attempt )
       }
-      def onFailure( response : JResponse, failure : Throwable ) : Unit = {
+      override def onFailure( response : JResponse, failure : Throwable ) : Unit = {
         promise.failure( failure )
       }
-      def onComplete( result : JResult ) {
+      override def onComplete( result : JResult ) {
         if ( ! promise.isCompleted ) { // usually should have been completed already!
           val oops = {
             if ( result.isFailed ) result.getFailure() else new Exception( s"Unknown failure while executing jsonrpc request, method name: '${methodName}', params: '${paramsArray}'" )
@@ -79,3 +86,4 @@ class JettyExchanger( url : URL, factory : JettyExchanger.Factory ) extends Exch
 
   def close() : Unit = () // nothing to do at this level
 }
+

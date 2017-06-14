@@ -19,7 +19,7 @@ object Exchanger {
   private implicit lazy val logger = mlogger( this )
 
   final object Factory {
-    final class Simple( implicit ec : ExecutionContext ) extends Exchanger.Factory {
+    final class Simple()( implicit ec : ExecutionContext = ExecutionContext.global ) extends Exchanger.Factory {
       def apply( url : URL ) : Exchanger = new Exchanger.Simple( url )
       def close() : Unit = () //nothing to do
     }
@@ -27,6 +27,14 @@ object Exchanger {
   trait Factory extends Closeable {
     def apply( url : URL ) : Exchanger
     def close() : Unit
+
+    def apply( url : String ) : Exchanger = this.apply( new URL( url ) )
+  }
+  object Simple {
+    // Note: This one-step is safe only because the Simple's factory doesn't need to be closed
+    //       Anonoyingly, only one of these is permitted by the compiler to accept the default ExecutionContext argument
+    def apply( url : URL )( implicit ec : ExecutionContext ) : Exchanger = (new Factory.Simple()( ec )).apply( url )
+    def apply( url : String )( implicit ec : ExecutionContext = ExecutionContext.global ) : Exchanger = this.apply( new URL( url ) )( ec )
   }
   final class Simple( httpUrl : URL )( implicit ec : ExecutionContext ) extends Exchanger {
     TRACE.log( s"${this} created, using URL '$httpUrl'" )
@@ -66,6 +74,10 @@ trait Exchanger extends AutoCloseable {
 
   protected def traceParse( is : InputStream ) : JsValue = {
     TRACE.logEval( "Raw parsed JSON: " )( Json.parse( is ) )
+  }
+
+  protected def traceParse( bytes : Array[Byte] ) : JsValue = {
+    TRACE.logEval( "Raw parsed JSON: " )( Json.parse( bytes ) )
   }
 
   protected def goodId( id : Int ) : PartialFunction[Response, Boolean] = {
