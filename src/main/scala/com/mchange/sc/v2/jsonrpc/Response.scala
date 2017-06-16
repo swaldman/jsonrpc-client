@@ -8,7 +8,9 @@ object Response {
 
     final case class Report( code : Int, message : String, data : Option[JsValue] = None)
   }
-  final case class Error( id : Option[Int], error : Error.Report ) // id won't be present in the error case where ID was not sent
+  final case class Error( id : Option[Int], error : Error.Report ) { // id won't be present in the error case where ID was not sent
+    def vomit : Nothing = throw new JsonrpcException( this )
+  }
   final case class Success( id : Int, result : JsValue );
 }
 // type Response = Either[Response.Error,Response.Success]
