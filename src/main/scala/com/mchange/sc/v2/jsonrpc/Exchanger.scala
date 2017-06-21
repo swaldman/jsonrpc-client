@@ -3,7 +3,7 @@ package com.mchange.sc.v2.jsonrpc
 import scala.collection._
 import scala.concurrent.{blocking,ExecutionContext,Future}
 
-import java.io.{Closeable,InputStream}
+import java.io.InputStream
 import java.net.{HttpURLConnection, URL}
 import java.nio.charset.StandardCharsets.UTF_8
 
@@ -26,7 +26,7 @@ object Exchanger {
       def close() : Unit = () //nothing to do
     }
   }
-  trait Factory extends Closeable {
+  trait Factory extends AutoCloseable {
     def apply( url : URL ) : Exchanger
     def close() : Unit
 
