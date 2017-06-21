@@ -19,7 +19,7 @@ object Exchanger {
   private implicit lazy val logger = mlogger( this )
 
   final object Factory {
-    final class Simple()( implicit ec : ExecutionContext = ExecutionContext.global ) extends Exchanger.Factory {
+    final object Simple extends Exchanger.Factory {
       def apply( url : URL ) : Exchanger = new Exchanger.Simple( url )
       def close() : Unit = () //nothing to do
     }
@@ -30,16 +30,10 @@ object Exchanger {
 
     def apply( url : String ) : Exchanger = this.apply( new URL( url ) )
   }
-  object Simple {
-    // Note: This one-step is safe only because the Simple's factory doesn't need to be closed
-    //       Anonoyingly, only one of these is permitted by the compiler to accept the default ExecutionContext argument
-    def apply( url : URL )( implicit ec : ExecutionContext ) : Exchanger = (new Factory.Simple()( ec )).apply( url )
-    def apply( url : String )( implicit ec : ExecutionContext = ExecutionContext.global ) : Exchanger = this.apply( new URL( url ) )( ec )
-  }
-  final class Simple( httpUrl : URL )( implicit ec : ExecutionContext ) extends Exchanger {
+  final class Simple( httpUrl : URL ) extends Exchanger {
     TRACE.log( s"${this} created, using URL '$httpUrl'" )
 
-    def exchange( methodName : String, paramsArray : JsArray ) : Future[Response] = Future {
+    def exchange( methodName : String, paramsArray : JsArray )( implicit ec : ExecutionContext ) : Future[Response] = Future {
 
       val id = newRandomId()
 
@@ -85,7 +79,7 @@ trait Exchanger extends AutoCloseable {
     case Yin( error )    => error.id.fold( true )( _ == id )
   }
 
-  def exchange( methodName : String, paramsArray : JsArray ) : Future[Response]
+  def exchange( methodName : String, paramsArray : JsArray )( implicit ec : ExecutionContext ) : Future[Response]
 
   def close() : Unit
 }

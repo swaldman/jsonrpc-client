@@ -18,7 +18,7 @@ import java.io.ByteArrayInputStream
 import java.net.URL
 import java.nio.ByteBuffer
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
 
 import play.api.libs.json._
@@ -26,11 +26,8 @@ import play.api.libs.json._
 object JettyExchanger {
   private implicit lazy val logger = mlogger( this )
 
-  object Factory {
-    def create() : Factory = new Factory()
-  }
   final class Factory extends Exchanger.Factory {
-    val httpClient = new HttpClient()
+    private [JettyExchanger] val httpClient = new HttpClient()
     httpClient.setFollowRedirects(false)
     httpClient.start()
 
@@ -42,7 +39,7 @@ object JettyExchanger {
   }
 }
 class JettyExchanger( url : URL, factory : JettyExchanger.Factory ) extends Exchanger {
-  def exchange( methodName : String, paramsArray : JsArray ) : Future[Response] = {
+  def exchange( methodName : String, paramsArray : JsArray )( implicit ec : ExecutionContext ) : Future[Response] = {
     val id = newRandomId()
 
     val paramsBytes = requestBytes( id, methodName, paramsArray )
