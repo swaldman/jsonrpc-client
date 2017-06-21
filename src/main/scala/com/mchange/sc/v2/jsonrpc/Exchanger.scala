@@ -13,6 +13,8 @@ import com.mchange.sc.v2.lang.borrow
 
 import com.mchange.sc.v2.yinyang._
 
+import com.mchange.sc.v2.playjson.JsValueSource
+
 import com.mchange.sc.v1.log.MLevel._
 
 object Exchanger {
@@ -50,7 +52,7 @@ object Exchanger {
 
       blocking {
         borrow( htconn.getOutputStream() )( _.write(paramsBytes) )
-        borrow( htconn.getInputStream() )( traceParse ).as[Response] ensuring goodId( id )
+        borrow( htconn.getInputStream() )( traceParse[InputStream] ).as[Response] ensuring goodId( id )
       }
     }
     def close() : Unit = ()
@@ -66,12 +68,8 @@ trait Exchanger extends AutoCloseable {
     Json.asciiStringify( paramsJsObj ).getBytes( UTF_8 )
   }
 
-  protected def traceParse( is : InputStream ) : JsValue = {
-    TRACE.logEval( "Raw parsed JSON: " )( Json.parse( is ) )
-  }
-
-  protected def traceParse( bytes : Array[Byte] ) : JsValue = {
-    TRACE.logEval( "Raw parsed JSON: " )( Json.parse( bytes ) )
+  protected def traceParse[T : JsValueSource]( src : T ) : JsValue = {
+    TRACE.logEval( "Raw parsed JSON: " )( implicitly[JsValueSource[T]].toJsValue( src ) )
   }
 
   protected def goodId( id : Int ) : PartialFunction[Response, Boolean] = {
