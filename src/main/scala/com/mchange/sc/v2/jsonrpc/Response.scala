@@ -13,7 +13,7 @@ object Response {
   }
   final case class Success( id : Int, result : JsValue );
 }
-// type Response = Either[Response.Error,Response.Success]
+// type Response = YinYang[Response.Error,Response.Success]
 //
 // defined in package object since not legal at top level
 

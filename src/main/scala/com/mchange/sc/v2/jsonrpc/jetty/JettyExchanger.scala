@@ -26,7 +26,7 @@ import play.api.libs.json._
 object JettyExchanger {
   private implicit lazy val logger = mlogger( this )
 
-  final class Factory extends Exchanger.Factory {
+  final class Factory extends Exchanger.Factory.Async {
     private [JettyExchanger] val httpClient = new HttpClient()
     httpClient.setFollowRedirects(false)
     httpClient.start()

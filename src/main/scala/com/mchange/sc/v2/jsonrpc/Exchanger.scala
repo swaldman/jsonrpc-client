@@ -21,10 +21,17 @@ object Exchanger {
   private implicit lazy val logger = mlogger( this )
 
   final object Factory {
+
+    def createSimpleFactory() : Exchanger.Factory       = Simple
+    def createAsyncFactory()  : Exchanger.Factory.Async = new jetty.JettyExchanger.Factory
+
+    implicit lazy val Default : Exchanger.Factory.Async = createAsyncFactory()
+
     final object Simple extends Exchanger.Factory {
       def apply( url : URL ) : Exchanger = new Exchanger.Simple( url )
       def close() : Unit = () //nothing to do
     }
+    trait Async extends Factory // just a marker trait
   }
   trait Factory extends AutoCloseable {
     def apply( url : URL ) : Exchanger
