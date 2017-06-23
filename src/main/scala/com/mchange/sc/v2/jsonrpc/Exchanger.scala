@@ -23,9 +23,9 @@ object Exchanger {
   final object Factory {
 
     def createSimpleFactory() : Exchanger.Factory       = Simple
-    def createAsyncFactory()  : Exchanger.Factory.Async = new jetty.JettyExchanger.Factory
+    def createAsyncFactory()  : Exchanger.Factory.Async = new jetty.JettyExchanger.Factory()
 
-    implicit lazy val Default : Exchanger.Factory.Async = createAsyncFactory()
+    implicit lazy val Default : Exchanger.Factory.Async = new jetty.JettyExchanger.Factory( jetty.JettyExchanger.Factory.defaultInstanceBuildClient _ )
 
     final object Simple extends Exchanger.Factory {
       def apply( url : URL ) : Exchanger = new Exchanger.Simple( url )

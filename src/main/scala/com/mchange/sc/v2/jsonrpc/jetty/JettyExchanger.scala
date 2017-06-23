@@ -13,6 +13,8 @@ import com.mchange.v3.nio.ByteBufferUtils
 import org.eclipse.jetty.client.HttpClient
 import org.eclipse.jetty.client.api.{Request => JRequest, Response => JResponse, Result => JResult}
 import org.eclipse.jetty.client.util.{ByteBufferContentProvider, InputStreamResponseListener}
+import org.eclipse.jetty.util.thread.QueuedThreadPool
+import org.eclipse.jetty.util.HttpCookieStore
 
 import java.io.ByteArrayInputStream
 import java.net.URL
@@ -26,9 +28,26 @@ import play.api.libs.json._
 object JettyExchanger {
   private implicit lazy val logger = mlogger( this )
 
-  final class Factory extends Exchanger.Factory.Async {
-    private [JettyExchanger] val httpClient = new HttpClient()
-    httpClient.setFollowRedirects(false)
+  object Factory {
+    def commonBuildClient() : HttpClient = {
+      val httpClient = new HttpClient()
+      httpClient.setFollowRedirects(false)
+      httpClient.setCookieStore(new HttpCookieStore.Empty())
+      httpClient
+    }
+    private [jsonrpc] def defaultInstanceBuildClient() : HttpClient = {
+      val threadPool = new QueuedThreadPool()
+      threadPool.setName( s"jsonrpc.Exchanger.Default[Jetty-HttpClient]" )
+      threadPool.setDaemon( true )
+
+      val client = commonBuildClient()
+      client.setExecutor( threadPool )
+
+      client
+    }
+  }
+  final class Factory( buildClient : () => HttpClient = Factory.commonBuildClient _ ) extends Exchanger.Factory.Async {
+    private [JettyExchanger] val httpClient = buildClient()
     httpClient.start()
 
     def apply( url : URL ) : Exchanger = new JettyExchanger( url, this )
