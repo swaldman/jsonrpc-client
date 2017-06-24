@@ -13,7 +13,7 @@ import com.mchange.v3.nio.ByteBufferUtils
 import org.eclipse.jetty.client.HttpClient
 import org.eclipse.jetty.client.api.{Request => JRequest, Response => JResponse, Result => JResult}
 import org.eclipse.jetty.client.util.{ByteBufferContentProvider, InputStreamResponseListener}
-import org.eclipse.jetty.util.thread.QueuedThreadPool
+import org.eclipse.jetty.util.thread.{QueuedThreadPool, ScheduledExecutorScheduler}
 import org.eclipse.jetty.util.HttpCookieStore
 
 import java.io.ByteArrayInputStream
@@ -36,12 +36,17 @@ object JettyExchanger {
       httpClient
     }
     private [jsonrpc] def defaultInstanceBuildClient() : HttpClient = {
+      val threadName = "jsonrpc.Exchanger.Default[Jetty-HttpClient]"
+
       val threadPool = new QueuedThreadPool()
-      threadPool.setName( s"jsonrpc.Exchanger.Default[Jetty-HttpClient]" )
+      threadPool.setName( threadName )
       threadPool.setDaemon( true )
+
+      val scheduler = new ScheduledExecutorScheduler( threadName + "-scheduler", true ); // the scheduler should also use daemon threads
 
       val client = commonBuildClient()
       client.setExecutor( threadPool )
+      client.setScheduler( scheduler )
 
       client
     }
