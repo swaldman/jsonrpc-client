@@ -15,6 +15,7 @@ import org.eclipse.jetty.client.api.{Request => JRequest, Response => JResponse,
 import org.eclipse.jetty.client.util.{ByteBufferContentProvider, InputStreamResponseListener}
 import org.eclipse.jetty.util.thread.{QueuedThreadPool, ScheduledExecutorScheduler}
 import org.eclipse.jetty.util.HttpCookieStore
+import org.eclipse.jetty.util.ssl.SslContextFactory
 
 import java.io.ByteArrayInputStream
 import java.net.URL
@@ -30,7 +31,7 @@ object JettyExchanger {
 
   object Factory {
     def commonBuildClient() : HttpClient = {
-      val httpClient = new HttpClient()
+      val httpClient = new HttpClient(new SslContextFactory())
       httpClient.setFollowRedirects(false)
       httpClient.setCookieStore(new HttpCookieStore.Empty())
       httpClient

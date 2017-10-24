@@ -30,7 +30,7 @@ libraryDependencies += "com.mchange" %% "mchange-commons-scala" % "0.4.3-SNAPSHO
 
 libraryDependencies += "com.mchange" %% "mchange-play-json-util" % "0.0.1-SNAPSHOT"
 
-libraryDependencies += "org.eclipse.jetty" % "jetty-client" % "9.4.6.v20170531"
+libraryDependencies += "org.eclipse.jetty" % "jetty-client" % "9.4.7.v20170914"
 
 libraryDependencies += {
   CrossVersion.partialVersion(Keys.scalaVersion.value) match {
