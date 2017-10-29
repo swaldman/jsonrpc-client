@@ -82,7 +82,18 @@ class JettyExchanger( url : URL, factory : JettyExchanger.Factory ) extends Exch
       override def onContent( response : JResponse, content : ByteBuffer ) : Unit = {
         val status = response.getStatus()
         if (status == 200) {
-          val attempt = Try( traceParse( ByteBufferUtils.newArray( content ) ).as[Response] ensuring goodId( id ) )
+          // sometimes network stacks corrupt with NUL characters, illegal in JSON
+          // so we try to filter for those if somethig goes wrong.
+          //
+          // XXX: If NUL chars are the problem, it's probably terminal NUL.
+          //      Maybe we should first try checking for that, and removing if
+          //      found, before iterating through all the bytes to filter?
+          val attempt = {
+            val array = ByteBufferUtils.newArray( content )
+            def firstTry = Try( traceParse( array ) )
+            def secondTry = Try( traceParse( array.filter( _ != 0 ) ) )
+            (firstTry orElse secondTry).map( _.as[Response] ensuring goodId( id ) )
+          }
           promise.complete( attempt )
         } else {
           promise.failure( new Exception( s"Unexpected HTTP status: ${status}" ) )
