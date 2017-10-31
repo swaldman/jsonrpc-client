@@ -8,6 +8,8 @@ import com.mchange.sc.v2.yinyang._
 
 import com.mchange.sc.v1.log.MLevel._
 
+import com.mchange.sc.v2.json
+
 import com.mchange.v3.nio.ByteBufferUtils
 
 import org.eclipse.jetty.client.HttpClient
@@ -64,6 +66,8 @@ object JettyExchanger {
   }
 }
 class JettyExchanger( url : URL, factory : JettyExchanger.Factory ) extends Exchanger {
+  import JettyExchanger.logger
+
   def exchange( methodName : String, paramsArray : JsArray )( implicit ec : ExecutionContext ) : Future[Response] = {
     val id = newRandomId()
 
@@ -83,16 +87,17 @@ class JettyExchanger( url : URL, factory : JettyExchanger.Factory ) extends Exch
         val status = response.getStatus()
         if (status == 200) {
           // sometimes network stacks corrupt with NUL characters, illegal in JSON
-          // so we try to filter for those if somethig goes wrong.
-          //
-          // XXX: If NUL chars are the problem, it's probably terminal NUL.
-          //      Maybe we should first try checking for that, and removing if
-          //      found, before iterating through all the bytes to filter?
+          // so we try to filter for those if something goes wrong.
           val attempt = {
             val array = ByteBufferUtils.newArray( content )
-            def firstTry = Try( traceParse( array ) )
-            def secondTry = Try( traceParse( array.filter( _ != 0 ) ) )
-            (firstTry orElse secondTry).map( _.as[Response] ensuring goodId( id ) )
+            def firstTry  = Try( traceParse( array ) )
+            def secondTry = Try{
+              val out = traceParse( json.removeNulTermination( array ) )
+              DEBUG.log("Had to remove unepected NUL termination from JSON" )
+              out
+            }
+            def thirdTry  = Try( traceParse( filterControlCharacters( array ) ) )
+            (firstTry orElse secondTry orElse thirdTry).map( _.as[Response] ensuring goodId( id ) )
           }
           promise.complete( attempt )
         } else {
@@ -118,5 +123,13 @@ class JettyExchanger( url : URL, factory : JettyExchanger.Factory ) extends Exch
   }
 
   def close() : Unit = () // nothing to do at this level
+
+  private def filterControlCharacters( input : Array[Byte] ) : Array[Byte] = {
+    val segregated = json.segregateControlCharacters( input )
+    if ( segregated.controlCharacters.nonEmpty ) {
+      DEBUG.log( s"""Control characters were removed [${segregated.escapedControlCharacters}] to generate (hopefully) valid JSON "${segregated.clean}"""" )
+    }
+    segregated.cleanBytes()
+  }
 }
 
