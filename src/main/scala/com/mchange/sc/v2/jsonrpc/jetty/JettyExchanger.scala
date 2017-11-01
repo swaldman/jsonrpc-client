@@ -8,10 +8,6 @@ import com.mchange.sc.v2.yinyang._
 
 import com.mchange.sc.v1.log.MLevel._
 
-import com.mchange.sc.v2.json
-
-import com.mchange.v3.nio.ByteBufferUtils
-
 import org.eclipse.jetty.client.HttpClient
 import org.eclipse.jetty.client.api.{Request => JRequest, Response => JResponse, Result => JResult}
 import org.eclipse.jetty.client.util.{ByteBufferContentProvider, InputStreamResponseListener}
@@ -24,7 +20,6 @@ import java.net.URL
 import java.nio.ByteBuffer
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.Try
 
 import play.api.libs.json._
 
@@ -66,12 +61,11 @@ object JettyExchanger {
   }
 }
 class JettyExchanger( url : URL, factory : JettyExchanger.Factory ) extends Exchanger {
-  import JettyExchanger.logger
 
   def exchange( methodName : String, paramsArray : JsArray )( implicit ec : ExecutionContext ) : Future[Response] = {
     val id = newRandomId()
 
-    val paramsBytes = requestBytes( id, methodName, paramsArray )
+    val paramsBytes = traceRequestBytes( id, methodName, paramsArray )
 
     val byteBuffer = ByteBuffer.wrap( paramsBytes )
 
@@ -86,19 +80,7 @@ class JettyExchanger( url : URL, factory : JettyExchanger.Factory ) extends Exch
       override def onContent( response : JResponse, content : ByteBuffer ) : Unit = {
         val status = response.getStatus()
         if (status == 200) {
-          // sometimes network stacks corrupt with NUL characters, illegal in JSON
-          // so we try to filter for those if something goes wrong.
-          val attempt = {
-            val array = ByteBufferUtils.newArray( content )
-            def firstTry  = Try( traceParse( array ) )
-            def secondTry = Try{
-              val out = traceParse( json.removeNulTermination( array ) )
-              DEBUG.log("Had to remove unepected NUL termination from JSON" )
-              out
-            }
-            def thirdTry  = Try( traceParse( filterControlCharacters( array ) ) )
-            (firstTry orElse secondTry orElse thirdTry).map( _.as[Response] ensuring goodId( id ) )
-          }
+          val attempt = traceAttemptParseResponse( id, content )
           promise.complete( attempt )
         } else {
           promise.failure( new Exception( s"Unexpected HTTP status: ${status}" ) )
@@ -123,13 +105,5 @@ class JettyExchanger( url : URL, factory : JettyExchanger.Factory ) extends Exch
   }
 
   def close() : Unit = () // nothing to do at this level
-
-  private def filterControlCharacters( input : Array[Byte] ) : Array[Byte] = {
-    val segregated = json.segregateControlCharacters( input )
-    if ( segregated.controlCharacters.nonEmpty ) {
-      DEBUG.log( s"""Control characters were removed [${segregated.escapedControlCharacters}] to generate (hopefully) valid JSON "${segregated.clean}"""" )
-    }
-    segregated.cleanBytes()
-  }
 }
 

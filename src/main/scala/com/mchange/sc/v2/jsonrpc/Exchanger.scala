@@ -2,10 +2,13 @@ package com.mchange.sc.v2.jsonrpc
 
 import scala.collection._
 import scala.concurrent.{blocking,ExecutionContext,Future}
+import scala.util.Try
 
 import java.io.InputStream
 import java.net.{HttpURLConnection, URL}
 import java.nio.charset.StandardCharsets.UTF_8
+
+import com.mchange.sc.v2.json
 
 import play.api.libs.json._
 
@@ -13,7 +16,7 @@ import com.mchange.sc.v2.lang.borrow
 
 import com.mchange.sc.v2.yinyang._
 
-import com.mchange.sc.v2.playjson.JsValueSource
+import com.mchange.sc.v2.playjson.BufferedJsValueSource
 
 import com.mchange.sc.v1.log.MLevel._
 
@@ -46,7 +49,7 @@ object Exchanger {
 
       val id = newRandomId()
 
-      val paramsBytes = requestBytes( id, methodName, paramsArray )
+      val paramsBytes = traceRequestBytes( id, methodName, paramsArray )
 
       val htconn = httpUrl.openConnection().asInstanceOf[HttpURLConnection]
       htconn.setDoOutput( true )
@@ -59,7 +62,7 @@ object Exchanger {
 
       blocking {
         borrow( htconn.getOutputStream() )( _.write(paramsBytes) )
-        borrow( htconn.getInputStream() )( traceParse[InputStream] ).as[Response] ensuring goodId( id )
+        borrow( htconn.getInputStream() )( traceParseResponse[InputStream]( id, _ ) )
       }
     }
     def close() : Unit = ()
@@ -70,13 +73,31 @@ trait Exchanger extends AutoCloseable {
 
   protected def newRandomId() = scala.util.Random.nextInt()
 
-  protected def requestBytes( id : Int, methodName : String, paramsArray : JsArray ) : Array[Byte] = {
+  protected def traceRequestBytes( id : Int, methodName : String, paramsArray : JsArray ) : Array[Byte] = {
     val paramsJsObj = JsObject( Seq( "jsonrpc" -> JsString("2.0"), "method" -> JsString(methodName), "params" ->  paramsArray, "id" -> JsNumber(id) ) )
-    Json.asciiStringify( paramsJsObj ).getBytes( UTF_8 )
+    val jsonString = Json.asciiStringify( paramsJsObj )
+    TRACE.log("Generated JSON Request: " + jsonString)
+    jsonString.getBytes( UTF_8 )
   }
 
-  protected def traceParse[T : JsValueSource]( src : T ) : JsValue = {
-    TRACE.logEval( "Raw parsed JSON: " )( implicitly[JsValueSource[T]].toJsValue( src ) )
+  protected def traceParseResponse[T : BufferedJsValueSource]( id : Int, src : T ) : Response = {
+    traceAttemptParseResponse( id, src ).get
+  }
+
+  // sometimes network stacks corrupt with NUL characters, illegal in JSON
+  // so we try to filter for those if something goes wrong.
+  protected def traceAttemptParseResponse[T : BufferedJsValueSource]( id : Int, src : T ) : Try[Response] = {
+    val buffered = implicitly[BufferedJsValueSource[T]].toBufferedJsValue( src )
+
+    def firstTry  = Try( buffered.toJsValue )
+    def secondTry = Try {
+      val out = buffered.transform( json.removeNulTermination ).toJsValue
+      DEBUG.log("Had to remove unexpected NUL termination from JSON" )
+      out
+    }
+    def thirdTry  = Try( buffered.transform( filterControlCharacters ).toJsValue )
+    val allTries = (firstTry orElse secondTry orElse thirdTry)
+    allTries.map( TRACE.logEval("Parsed JSON response: ")(_) ).map( _.as[Response] ensuring goodId( id ) )
   }
 
   protected def goodId( id : Int ) : PartialFunction[Response, Boolean] = {
@@ -87,4 +108,12 @@ trait Exchanger extends AutoCloseable {
   def exchange( methodName : String, paramsArray : JsArray )( implicit ec : ExecutionContext ) : Future[Response]
 
   def close() : Unit
+
+  private def filterControlCharacters( input : immutable.Seq[Byte] ) : immutable.Seq[Byte] = {
+    val segregated = json.segregateControlCharacters( input )
+    if ( segregated.controlCharacters.nonEmpty ) {
+      DEBUG.log( s"""Control characters were removed [${segregated.escapedControlCharacters}] to generate (hopefully) valid JSON "${segregated.clean}"""" )
+    }
+    segregated.cleanBytes()
+  }
 }
