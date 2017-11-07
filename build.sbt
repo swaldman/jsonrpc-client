@@ -6,11 +6,11 @@ organization := "com.mchange"
 
 name := "jsonrpc-client"
 
-version := "0.0.1-SNAPSHOT"
+version := "0.0.1"
 
 scalaVersion := "2.11.11"
 
-crossScalaVersions := Seq("2.10.6", "2.11.11", "2.12.2")
+crossScalaVersions := Seq("2.10.6", "2.11.11", "2.12.4")
 
 scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked" /*, "-Xlog-implicits" */)
 
@@ -22,13 +22,13 @@ resolvers += ("Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases")
 
 resolvers += ("Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/")
 
-libraryDependencies += "com.mchange" %% "mlog-scala" % "0.3.10-SNAPSHOT"
+libraryDependencies += "com.mchange" %% "mlog-scala" % "0.3.10"
 
-libraryDependencies += "com.mchange" %% "yinyang" % "0.0.2-SNAPSHOT"
+libraryDependencies += "com.mchange" %% "yinyang" % "0.0.2"
 
-libraryDependencies += "com.mchange" %% "mchange-commons-scala" % "0.4.3-SNAPSHOT"
+libraryDependencies += "com.mchange" %% "mchange-commons-scala" % "0.4.3"
 
-libraryDependencies += "com.mchange" %% "mchange-play-json-util" % "0.0.1-SNAPSHOT"
+libraryDependencies += "com.mchange" %% "mchange-play-json-util" % "0.0.1"
 
 libraryDependencies += "org.eclipse.jetty" % "jetty-client" % "9.4.7.v20170914"
 
