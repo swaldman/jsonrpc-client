@@ -15,9 +15,10 @@ import org.eclipse.jetty.util.thread.{QueuedThreadPool, ScheduledExecutorSchedul
 import org.eclipse.jetty.util.HttpCookieStore
 import org.eclipse.jetty.util.ssl.SslContextFactory
 
-import java.io.ByteArrayInputStream
+import java.io.{ByteArrayInputStream,ByteArrayOutputStream}
 import java.net.URL
 import java.nio.ByteBuffer
+import java.nio.channels.{Channels,WritableByteChannel}
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
@@ -25,6 +26,8 @@ import play.api.libs.json._
 
 object JettyExchanger {
   private implicit lazy val logger = mlogger( this )
+
+  val DefaultBufferSize = 32 * 1024
 
   object Factory {
     def commonBuildClient() : HttpClient = {
@@ -62,6 +65,8 @@ object JettyExchanger {
 }
 class JettyExchanger( url : URL, factory : JettyExchanger.Factory ) extends Exchanger {
 
+  import JettyExchanger._
+
   def exchange( methodName : String, paramsArray : JsArray )( implicit ec : ExecutionContext ) : Future[Response] = {
     val id = newRandomId()
 
@@ -77,26 +82,63 @@ class JettyExchanger( url : URL, factory : JettyExchanger.Factory ) extends Exch
 
     val handler = new JResponse.Listener.Adapter {
 
+      //MT: protected by this' lock
+      var buffer  : ByteArrayOutputStream = null
+      var channel : WritableByteChannel  = null
+
+      private def ensureBuffer( response : JResponse ) : Unit = this.synchronized {
+        if ( buffer == null ) {
+          val status = response.getStatus()
+          if (status == 200) {
+            val lenStr = response.getHeaders().get("Content-Length")
+            if ( lenStr != null ) {
+              this.buffer = new ByteArrayOutputStream( lenStr.toInt )
+            }
+            else {
+              this.buffer = new ByteArrayOutputStream( DefaultBufferSize )
+            }
+            this.channel = Channels.newChannel( buffer )
+          } else {
+            throw new Exception( s"Unexpected HTTP status: ${status}" )
+          }
+        }
+      }
+      private def appendToBuffer( partialContent : ByteBuffer ) : Unit = this.synchronized {
+        channel.write( partialContent )
+      }
+      private def retrieveBuffer() : Array[Byte] = this.synchronized {
+        channel.close()
+        buffer.toByteArray
+      }
+
       override def onContent( response : JResponse, content : ByteBuffer ) : Unit = {
-        val status = response.getStatus()
-        if (status == 200) {
-          val attempt = traceAttemptParseResponse( id, content )
-          promise.complete( attempt )
-        } else {
-          promise.failure( new Exception( s"Unexpected HTTP status: ${status}" ) )
+        try {
+          ensureBuffer( response )
+          appendToBuffer( content )
+        }
+        catch {
+          case t : Throwable => promise.failure( t )
         }
       }
       override def onFailure( response : JResponse, failure : Throwable ) : Unit = {
         if (! promise.isCompleted ) { // might have been completed in onContent...
           promise.failure( failure )
+        } else {
+          val message = {
+            s"""|Subsequent to an earlier failure (which is visible within a returned future), the following Exception occurred while processing a
+                |response to jsonrpc method name: '${methodName}', params: '${paramsArray}'.""".stripMargin
+          }
+          DEBUG.log(message , failure )
         }
       }
+
       override def onComplete( result : JResult ) {
-        if ( ! promise.isCompleted ) { // usually should have been completed already!
-          val oops = {
-            if ( result.isFailed ) result.getFailure() else new Exception( s"Unknown failure while executing jsonrpc request, method name: '${methodName}', params: '${paramsArray}'" )
-          }
-          promise.failure( oops )
+        if ( result.isFailed ) {
+          promise.failure( result.getFailure() )
+        }
+        else {
+          val attempt = traceAttemptParseResponse( id, retrieveBuffer() )
+          promise.complete( attempt )
         }
       }
     }
