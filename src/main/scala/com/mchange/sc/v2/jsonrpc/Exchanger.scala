@@ -2,7 +2,8 @@ package com.mchange.sc.v2.jsonrpc
 
 import scala.collection._
 import scala.concurrent.{blocking,ExecutionContext,Future}
-import scala.util.Try
+import scala.util.{Try,Success,Failure}
+import scala.io.Codec
 
 import java.io.InputStream
 import java.net.{HttpURLConnection, URL}
@@ -97,7 +98,16 @@ trait Exchanger extends AutoCloseable {
     }
     def thirdTry  = Try( buffered.transform( filterControlCharacters ).toJsValue )
     val allTries = (firstTry orElse secondTry orElse thirdTry)
-    allTries.map( TRACE.logEval("Parsed JSON response: ")(_) ).map( _.as[Response] ensuring goodId( id ) )
+
+    // we're just logging the parsed value here on success as we return it.
+    // on failure, we log the (third-try) JSON that failed to parse
+    allTries.map( jsv => TRACE.logEval("Parsed JSON response: ")(jsv) ).map( _.as[Response] ensuring goodId( id ) ) match {
+      case ok   @ Success(_) => ok
+      case oops @ Failure(_) => {
+        WARNING.log( s"Response parsing failed. Content (interpreted as UTF8):\n${new String(buffered.buffer.toArray, Codec.UTF8.charSet)}" )
+        oops
+      }
+    }
   }
 
   protected def goodId( id : Int ) : PartialFunction[Response, Boolean] = {
