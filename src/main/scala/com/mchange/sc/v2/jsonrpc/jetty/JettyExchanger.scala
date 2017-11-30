@@ -87,7 +87,9 @@ class JettyExchanger( url : URL, factory : JettyExchanger.Factory ) extends Exch
         }
       }
       override def onFailure( response : JResponse, failure : Throwable ) : Unit = {
-        promise.failure( failure )
+        if (! promise.isCompleted ) { // might have been completed in onContent...
+          promise.failure( failure )
+        }
       }
       override def onComplete( result : JResult ) {
         if ( ! promise.isCompleted ) { // usually should have been completed already!
