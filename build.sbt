@@ -28,7 +28,7 @@ libraryDependencies += "com.mchange" %% "yinyang" % "0.0.2"
 
 libraryDependencies += "com.mchange" %% "mchange-commons-scala" % "0.4.3"
 
-libraryDependencies += "com.mchange" %% "mchange-play-json-util" % "0.0.1"
+libraryDependencies += "com.mchange" %% "mchange-play-json-util" % "0.0.2-SNAPSHOT"
 
 libraryDependencies += "org.eclipse.jetty" % "jetty-client" % "9.4.7.v20170914"
 
