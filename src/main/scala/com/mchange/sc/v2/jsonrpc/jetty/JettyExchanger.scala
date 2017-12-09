@@ -120,17 +120,6 @@ class JettyExchanger( url : URL, factory : JettyExchanger.Factory ) extends Exch
           case t : Throwable => promise.failure( t )
         }
       }
-      override def onFailure( response : JResponse, failure : Throwable ) : Unit = {
-        if (! promise.isCompleted ) { // might have been completed in onContent...
-          promise.failure( failure )
-        } else {
-          val message = {
-            s"""|Subsequent to an earlier failure (which is visible within a returned future), the following Exception occurred while processing a
-                |response to jsonrpc method name: '${methodName}', params: '${paramsArray}'.""".stripMargin
-          }
-          DEBUG.log(message , failure )
-        }
-      }
 
       override def onComplete( result : JResult ) {
         if ( result.isFailed ) {
