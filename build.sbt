@@ -6,7 +6,7 @@ organization := "com.mchange"
 
 name := "jsonrpc-client"
 
-version := "0.0.2-SNAPSHOT"
+version := "0.0.2"
 
 scalaVersion := "2.11.11"
 
@@ -26,9 +26,9 @@ libraryDependencies += "com.mchange" %% "mlog-scala" % "0.3.10"
 
 libraryDependencies += "com.mchange" %% "yinyang" % "0.0.2"
 
-libraryDependencies += "com.mchange" %% "mchange-commons-scala" % "0.4.3"
+libraryDependencies += "com.mchange" %% "mchange-commons-scala" % "0.4.4"
 
-libraryDependencies += "com.mchange" %% "mchange-play-json-util" % "0.0.2-SNAPSHOT"
+libraryDependencies += "com.mchange" %% "mchange-play-json-util" % "0.0.2"
 
 libraryDependencies += "org.eclipse.jetty" % "jetty-client" % "9.4.7.v20170914"
 
