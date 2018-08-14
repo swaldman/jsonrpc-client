@@ -6,11 +6,11 @@ organization := "com.mchange"
 
 name := "jsonrpc-client"
 
-version := "0.0.2"
+version := "0.0.3-SNAPSHOT"
 
-scalaVersion := "2.11.11"
+scalaVersion := "2.12.6"
 
-crossScalaVersions := Seq("2.10.6", "2.11.11", "2.12.4")
+crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.6")
 
 scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked" /*, "-Xlog-implicits" */)
 
@@ -30,7 +30,7 @@ libraryDependencies += "com.mchange" %% "mchange-commons-scala" % "0.4.4"
 
 libraryDependencies += "com.mchange" %% "mchange-play-json-util" % "0.0.2"
 
-libraryDependencies += "org.eclipse.jetty" % "jetty-client" % "9.4.7.v20170914"
+libraryDependencies += "org.eclipse.jetty" % "jetty-client" % "9.4.11.v20180605"
 
 libraryDependencies += {
   CrossVersion.partialVersion(Keys.scalaVersion.value) match {
