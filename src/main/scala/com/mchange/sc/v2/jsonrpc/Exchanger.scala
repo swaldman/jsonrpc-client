@@ -51,7 +51,7 @@ object Exchanger {
     def apply( httpUrl : URL )    : Exchanger = this.apply( Exchanger.Config( httpUrl ) )
     def apply( httpUrl : String ) : Exchanger = this.apply( new URL( httpUrl ) )
   }
-  final class Simple( config : Config ) extends Exchanger {
+  final class Simple( val config : Config ) extends Exchanger {
     TRACE.log( s"${this} created, using config '${config}'" )
 
     def exchange( methodName : String, paramsArray : JsArray )( implicit ec : ExecutionContext ) : Future[Response] = Future {
@@ -89,6 +89,8 @@ object Exchanger {
 }
 trait Exchanger extends AutoCloseable {
   import Exchanger.logger
+
+  def config : Exchanger.Config
 
   protected def newRandomId() = scala.util.Random.nextInt()
 

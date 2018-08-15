@@ -64,7 +64,7 @@ object JettyExchanger {
     }
   }
 }
-class JettyExchanger( config : Exchanger.Config, factory : JettyExchanger.Factory ) extends Exchanger {
+class JettyExchanger( val config : Exchanger.Config, factory : JettyExchanger.Factory ) extends Exchanger {
 
   import JettyExchanger._
 
