@@ -92,7 +92,7 @@ trait Exchanger extends AutoCloseable {
 
   def config : Exchanger.Config
 
-  protected def newRandomId() = scala.util.Random.nextInt()
+  protected def newRandomId() = scala.util.Random.nextInt(Int.MaxValue) // use nextInt( num ) to ensure we see only positive values!
 
   protected def traceRequestBytes( id : Int, methodName : String, paramsArray : JsArray ) : Array[Byte] = {
     val paramsJsObj = JsObject( Seq( "jsonrpc" -> JsString("2.0"), "method" -> JsString(methodName), "params" ->  paramsArray, "id" -> JsNumber(id) ) )

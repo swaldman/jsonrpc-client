@@ -117,7 +117,12 @@ class JettyExchanger( val config : Exchanger.Config, factory : JettyExchanger.Fa
         buffer.toByteArray
       }
 
+      override def onBegin( response : JResponse ) : Unit = {
+        TRACE.log( s"onBegin( ${response} )" )
+      }
+
       override def onContent( response : JResponse, content : ByteBuffer ) : Unit = {
+        TRACE.log( s"onContent( ${response}, ... )" )
         try {
           ensureBuffer( response )
           appendToBuffer( content )
@@ -127,13 +132,31 @@ class JettyExchanger( val config : Exchanger.Config, factory : JettyExchanger.Fa
         }
       }
 
-      override def onComplete( result : JResult ) {
-        if ( result.isFailed ) {
-          promise.failure( result.getFailure() )
+      override def onFailure( response : JResponse, failure : Throwable ) : Unit = {
+        TRACE.log( s"onFailure( ${response}, ${failure} )" )
+      }
+
+      override def onSuccess( response : JResponse ) : Unit = {
+        TRACE.log( s"onSuccess( ${response} )" )
+      }
+
+      override def onComplete( result : JResult ) : Unit = {
+        TRACE.log( s"onComplete( ${result} )" )
+        try {
+          if ( result.isFailed ) {
+            TRACE.log( s"onComplete -- failure detected" )
+            promise.failure( result.getFailure() )
+          }
+          else if ( result.getResponse().getStatus() == 200 ) {
+            val attempt = traceAttemptParseResponse( id, retrieveBuffer() )
+            promise.complete( attempt )
+          }
+          else {
+            promise.failure( new UnexpectedHttpStatusException( result.getResponse().getStatus(), result.getResponse().getReason() ) )
+          }
         }
-        else {
-          val attempt = traceAttemptParseResponse( id, retrieveBuffer() )
-          promise.complete( attempt )
+        catch {
+          case t : Throwable => promise.failure( t )
         }
       }
     }

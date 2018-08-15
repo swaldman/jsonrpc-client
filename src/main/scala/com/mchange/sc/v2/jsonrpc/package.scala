@@ -24,6 +24,7 @@ package object jsonrpc extends YinYang.YangBias.Base[Response.Error]( Response.E
   final class JsonrpcException( val code : Int, val message : String, val data : Option[JsValue] = None ) extends Exception( s"${message} [code=${code}]: ${JsonrpcException.stringifyErrorData(data)}" ) {
     def this( errorResponse : Response.Error ) = this( errorResponse.error.code, errorResponse.error.message, errorResponse.error.data ) 
   }
+  final class UnexpectedHttpStatusException( val status : Int, val reason : String ) extends Exception( s"Unexpected HTTP Status Code: ${status}, Reason: ${reason}" ) 
 
   type Response = YinYang[Response.Error,Response.Success]
 
