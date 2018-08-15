@@ -15,6 +15,7 @@ import org.eclipse.jetty.util.thread.{QueuedThreadPool, ScheduledExecutorSchedul
 import org.eclipse.jetty.util.HttpCookieStore
 import org.eclipse.jetty.util.ssl.SslContextFactory
 
+import java.util.concurrent.TimeUnit
 import java.io.{ByteArrayInputStream,ByteArrayOutputStream}
 import java.net.URL
 import java.nio.ByteBuffer
@@ -56,14 +57,14 @@ object JettyExchanger {
     private [JettyExchanger] val httpClient = buildClient()
     httpClient.start()
 
-    def apply( url : URL ) : Exchanger = new JettyExchanger( url, this )
+    def apply( config : Exchanger.Config ) : Exchanger = new JettyExchanger( config, this )
 
     def close() : Unit = {
       httpClient.stop()
     }
   }
 }
-class JettyExchanger( url : URL, factory : JettyExchanger.Factory ) extends Exchanger {
+class JettyExchanger( config : Exchanger.Config, factory : JettyExchanger.Factory ) extends Exchanger {
 
   import JettyExchanger._
 
@@ -76,7 +77,12 @@ class JettyExchanger( url : URL, factory : JettyExchanger.Factory ) extends Exch
 
     val contentProvider = new ByteBufferContentProvider( "application/json", byteBuffer )
 
-    val request = factory.httpClient.POST( url.toURI ).header( "charset", "utf-8" ).content( contentProvider )
+    val request = {
+      config.finiteTimeoutMillis match {
+        case Some( msecs ) => factory.httpClient.POST( config.httpUrl.toURI ).timeout( msecs, TimeUnit.MILLISECONDS ).header( "charset", "utf-8" ).content( contentProvider )
+        case None          => factory.httpClient.POST( config.httpUrl.toURI ).header( "charset", "utf-8" ).content( contentProvider )
+      }
+    }
 
     val promise = Promise[Response]()
 

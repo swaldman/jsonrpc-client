@@ -2,6 +2,7 @@ package com.mchange.sc.v2.jsonrpc
 
 import scala.collection._
 import scala.concurrent.{blocking,ExecutionContext,Future}
+import scala.concurrent.duration.Duration
 import scala.util.{Try,Success,Failure}
 import scala.io.Codec
 
@@ -24,6 +25,12 @@ import com.mchange.sc.v1.log.MLevel._
 object Exchanger {
   private implicit lazy val logger = mlogger( this )
 
+  final case class Config( httpUrl : URL, timeout : Duration = Duration.Inf ) {
+    require( timeout == Duration.Inf || timeout.isFinite, s"Exchanger.Config.timeout must be finite or Duration.Inf, not ${timeout}" )
+    val finiteTimeoutMillis : Option[Long] = if ( timeout == Duration.Inf ) None else Some( timeout.toMillis )
+    require( finiteTimeoutMillis.fold( true )( _ >= 0L ), s"Exchanger.Config.timeout must not be negative, can't be ${finiteTimeoutMillis.get} msecs" )
+  }
+
   final object Factory {
 
     def createSimpleFactory() : Exchanger.Factory       = Simple
@@ -32,30 +39,41 @@ object Exchanger {
     implicit lazy val Default : Exchanger.Factory.Async = new jetty.JettyExchanger.Factory( jetty.JettyExchanger.Factory.defaultInstanceBuildClient _ )
 
     final object Simple extends Exchanger.Factory {
-      def apply( url : URL ) : Exchanger = new Exchanger.Simple( url )
+      def apply( config : Exchanger.Config ) : Exchanger = new Exchanger.Simple( config )
       def close() : Unit = () //nothing to do
     }
     trait Async extends Factory // just a marker trait
   }
   trait Factory extends AutoCloseable {
-    def apply( url : URL ) : Exchanger
+    def apply( config : Exchanger.Config ) : Exchanger
     def close() : Unit
 
-    def apply( url : String ) : Exchanger = this.apply( new URL( url ) )
+    def apply( httpUrl : URL )    : Exchanger = this.apply( Exchanger.Config( httpUrl ) )
+    def apply( httpUrl : String ) : Exchanger = this.apply( new URL( httpUrl ) )
   }
-  final class Simple( httpUrl : URL ) extends Exchanger {
-    TRACE.log( s"${this} created, using URL '$httpUrl'" )
+  final class Simple( config : Config ) extends Exchanger {
+    TRACE.log( s"${this} created, using config '${config}'" )
 
     def exchange( methodName : String, paramsArray : JsArray )( implicit ec : ExecutionContext ) : Future[Response] = Future {
+
+      val timeoutMillis : Int = {
+        config.finiteTimeoutMillis match {
+          case Some( msecs ) if msecs.isValidInt => msecs.toInt
+          case Some( msecs )                     => throw new IllegalArgumentException( s"Timeout in msecs must be no greater than ${Int.MaxValue}, cannot be ${msecs}." )
+          case None                              => 0
+        }
+      }
 
       val id = newRandomId()
 
       val paramsBytes = traceRequestBytes( id, methodName, paramsArray )
 
-      val htconn = httpUrl.openConnection().asInstanceOf[HttpURLConnection]
+      val htconn = config.httpUrl.openConnection().asInstanceOf[HttpURLConnection]
       htconn.setDoOutput( true )
       htconn.setInstanceFollowRedirects( false )
       htconn.setUseCaches( false )
+      htconn.setConnectTimeout( timeoutMillis )
+      htconn.setReadTimeout( timeoutMillis )
       htconn.setRequestMethod( "POST" );
       htconn.setRequestProperty( "Content-Type", "application/json")
       htconn.setRequestProperty( "charset", "utf-8" )
