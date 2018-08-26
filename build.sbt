@@ -6,7 +6,7 @@ organization := "com.mchange"
 
 name := "jsonrpc-client"
 
-version := "0.0.3-SNAPSHOT"
+version := "0.0.3"
 
 scalaVersion := "2.12.6"
 
@@ -26,7 +26,7 @@ libraryDependencies += "com.mchange" %% "mlog-scala" % "0.3.10"
 
 libraryDependencies += "com.mchange" %% "yinyang" % "0.0.2"
 
-libraryDependencies += "com.mchange" %% "mchange-commons-scala" % "0.4.4"
+libraryDependencies += "com.mchange" %% "mchange-commons-scala" % "0.4.7"
 
 libraryDependencies += "com.mchange" %% "mchange-play-json-util" % "0.0.2"
 
