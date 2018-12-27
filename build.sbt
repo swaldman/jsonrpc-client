@@ -6,11 +6,11 @@ organization := "com.mchange"
 
 name := "jsonrpc-client"
 
-version := "0.0.3"
+version := "0.0.4-SNAPSHOT"
 
-scalaVersion := "2.12.6"
+scalaVersion := "2.12.8"
 
-crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.6")
+crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.8")
 
 scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked" /*, "-Xlog-implicits" */)
 
@@ -26,7 +26,7 @@ libraryDependencies += "com.mchange" %% "mlog-scala" % "0.3.10"
 
 libraryDependencies += "com.mchange" %% "yinyang" % "0.0.2"
 
-libraryDependencies += "com.mchange" %% "mchange-commons-scala" % "0.4.7"
+libraryDependencies += "com.mchange" %% "mchange-commons-scala" % "0.4.8-SNAPSHOT"
 
 libraryDependencies += "com.mchange" %% "mchange-play-json-util" % "0.0.2"
 
