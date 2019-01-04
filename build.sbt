@@ -35,7 +35,7 @@ libraryDependencies += "org.eclipse.jetty" % "jetty-client" % "9.4.11.v20180605"
 libraryDependencies += {
   CrossVersion.partialVersion(Keys.scalaVersion.value) match {
     case Some((2, 12)) => {
-      "com.typesafe.play" %% "play-json" % "2.6.0-RC2"
+      "com.typesafe.play" %% "play-json" % "2.6.13"
     }
     case Some((2, 11)) => {
       "com.typesafe.play" %% "play-json" % "2.5.15"
