@@ -6,11 +6,11 @@ organization := "com.mchange"
 
 name := "jsonrpc-client"
 
-version := "0.0.6"
+version := "0.0.7-SNAPSHOT"
 
-scalaVersion := "2.12.8"
+scalaVersion := "2.12.10"
 
-crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.8")
+crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.10")
 
 scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked" /*, "-Xlog-implicits" */)
 
