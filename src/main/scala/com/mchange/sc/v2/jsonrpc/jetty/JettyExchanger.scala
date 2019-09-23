@@ -80,9 +80,15 @@ class JettyExchanger( val config : Exchanger.Config, factory : JettyExchanger.Fa
     val contentProvider = new ByteBufferContentProvider( "application/json", byteBuffer )
 
     val request = {
-      config.finiteTimeoutMillis match {
-        case Some( msecs ) => factory.httpClient.POST( config.httpUrl.toURI ).timeout( msecs, TimeUnit.MILLISECONDS ).header( "charset", "utf-8" ).content( contentProvider )
-        case None          => factory.httpClient.POST( config.httpUrl.toURI ).header( "charset", "utf-8" ).content( contentProvider )
+      val noAuthRequest = {
+        config.finiteTimeoutMillis match {
+          case Some( msecs ) => factory.httpClient.POST( config.httpUrl.toURI ).timeout( msecs, TimeUnit.MILLISECONDS ).header( "charset", "utf-8" ).content( contentProvider )
+          case None          => factory.httpClient.POST( config.httpUrl.toURI ).header( "charset", "utf-8" ).content( contentProvider )
+        }
+      }
+      authorizationHeaderValue( config.httpUrl ) match {
+        case Some( authValue ) => noAuthRequest.header( "Authorization", authValue )
+        case None              => noAuthRequest
       }
     }
 

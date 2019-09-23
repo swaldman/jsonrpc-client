@@ -78,6 +78,9 @@ object Exchanger {
       htconn.setRequestProperty( "Content-Type", "application/json")
       htconn.setRequestProperty( "charset", "utf-8" )
       htconn.setRequestProperty( "Content-Length", paramsBytes.length.toString )
+      authorizationHeaderValue( config.httpUrl ).foreach { authValue =>
+        htconn.setRequestProperty( "Authorization", authValue )
+      }
 
       blocking {
         borrow( htconn.getOutputStream() )( _.write(paramsBytes) )
@@ -145,5 +148,17 @@ trait Exchanger extends AutoCloseable {
       DEBUG.log( s"""Control characters were removed [${segregated.escapedControlCharacters}] to generate (hopefully) valid JSON "${segregated.clean}"""" )
     }
     segregated.cleanBytes()
+  }
+
+  private def userInfoBase64( userInfo : String ) : String = java.util.Base64.getEncoder().encodeToString( userInfo.getBytes( scala.io.Codec.UTF8.charSet ) )
+
+  private [jsonrpc] def authorizationHeaderValue( url : URL ) : Option[String] = {
+    for {
+      uinfo <- Option( url.getUserInfo() )
+      uib64 = userInfoBase64( uinfo )
+    }
+    yield {
+      s"Basic ${uib64}"
+    }
   }
 }
