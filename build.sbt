@@ -6,7 +6,7 @@ organization := "com.mchange"
 
 name := "jsonrpc-client"
 
-version := "0.0.7-SNAPSHOT"
+version := "0.0.7"
 
 scalaVersion := "2.12.10"
 
@@ -22,11 +22,11 @@ resolvers += ("Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases")
 
 resolvers += ("Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/")
 
-libraryDependencies += "com.mchange" %% "mlog-scala" % "0.3.11"
+libraryDependencies += "com.mchange" %% "mlog-scala" % "0.3.13"
 
 libraryDependencies += "com.mchange" %% "yinyang" % "0.0.2"
 
-libraryDependencies += "com.mchange" %% "mchange-commons-scala" % "0.4.10"
+libraryDependencies += "com.mchange" %% "mchange-commons-scala" % "0.4.12"
 
 libraryDependencies += "com.mchange" %% "mchange-play-json-util" % "0.0.4"
 
