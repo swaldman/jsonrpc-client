@@ -54,13 +54,16 @@ object JettyExchanger {
     }
   }
   final class Factory( buildClient : () => HttpClient = Factory.commonBuildClient _ ) extends Exchanger.Factory.Async {
-    private [JettyExchanger] val httpClient = buildClient()
-    httpClient.start()
+    private [JettyExchanger] lazy val httpClient = {
+      val _httpClient = buildClient()
+      _httpClient.start()
+      _httpClient
+    }
 
     def apply( config : Exchanger.Config ) : Exchanger = new JettyExchanger( config, this )
 
     def close() : Unit = {
-      httpClient.stop()
+      if (! httpClient.isStopped() ) httpClient.stop()
     }
   }
 }
