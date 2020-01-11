@@ -6,7 +6,7 @@ organization := "com.mchange"
 
 name := "jsonrpc-client"
 
-version := "0.0.7"
+version := "0.0.8-SNAPSHOT"
 
 scalaVersion := "2.12.10"
 
