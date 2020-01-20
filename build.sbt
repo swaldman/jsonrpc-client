@@ -18,9 +18,9 @@ resolvers += ("releases" at nexusReleases)
 
 resolvers += ("snapshots" at nexusSnapshots)
 
-resolvers += ("Scalaz Bintray Repo" at "http://dl.bintray.com/scalaz/releases")
+resolvers += ("Scalaz Bintray Repo" at "https://dl.bintray.com/scalaz/releases")
 
-resolvers += ("Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/")
+resolvers += ("Typesafe repository" at "https://repo.typesafe.com/typesafe/releases/")
 
 libraryDependencies += "com.mchange" %% "mlog-scala" % "0.3.13"
 
