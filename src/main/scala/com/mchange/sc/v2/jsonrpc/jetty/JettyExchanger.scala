@@ -32,7 +32,7 @@ object JettyExchanger {
 
   object Factory {
     def commonBuildClient() : HttpClient = {
-      val httpClient = new HttpClient(new SslContextFactory())
+      val httpClient = new HttpClient(new SslContextFactory.Client())
       httpClient.setFollowRedirects(false)
       httpClient.setCookieStore(new HttpCookieStore.Empty())
       httpClient
