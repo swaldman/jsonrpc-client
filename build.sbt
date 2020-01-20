@@ -6,7 +6,7 @@ organization := "com.mchange"
 
 name := "jsonrpc-client"
 
-version := "0.0.8"
+version := "0.0.9-SNAPSHOT"
 
 scalaVersion := "2.12.10"
 
@@ -30,7 +30,7 @@ libraryDependencies += "com.mchange" %% "mchange-commons-scala" % "0.4.12"
 
 libraryDependencies += "com.mchange" %% "mchange-play-json-util" % "0.0.4"
 
-libraryDependencies += "org.eclipse.jetty" % "jetty-client" % "9.4.11.v20180605"
+libraryDependencies += "org.eclipse.jetty" % "jetty-client" % "9.4.26.v20200117"
 
 libraryDependencies += {
   CrossVersion.partialVersion(Keys.scalaVersion.value) match {
