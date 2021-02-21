@@ -71,7 +71,7 @@ class JettyExchanger( val config : Exchanger.Config, factory : JettyExchanger.Fa
 
   import JettyExchanger._
 
-  TRACE.log( s"Created JettyExchaner, config: ${config}" )
+  TRACE.log( s"Created JettyExchanger, config: ${config}" )
 
   def exchange( methodName : String, paramsArray : JsArray )( implicit ec : ExecutionContext ) : Future[Response] = {
     val id = newRandomId()
